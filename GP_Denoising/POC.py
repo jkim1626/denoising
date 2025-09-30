@@ -1,7 +1,3 @@
-# Original Exploratory Script
-# GP Regression
-# Updated: Jonathan Kim 9/20/2025
-
 import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.gaussian_process import GaussianProcessRegressor

@@ -1,13 +1,4 @@
-# Score-based diffusion models to 1-D signal denoising
-# Extended beyond the additive Gaussian case 
-# (Default in DDPM/SGM papers)
-# Handles both additive and multiplicative noise simultaneously
-
-# Purpose: Lightweight DEMO of score-based SDE denoising across noise types, including a combined (additive + multiplicative) case.
-# What it runs: Fixed (hand-crafted / analytic) scores, reverse-time SDE; simple plots to visualize clean/noisy/denoised.
-# When to use: Quick sanity checks, teaching, and figure sketching to illustrate the paper’s ideas without training a model.
-# Paper tie-in: Demonstrates the paper’s unified formulation beyond Gaussian noise (multiplicative + divergence term; combined noise).
-# Not included: No neural score training; minimal ablations/metrics; not designed for large-scale benchmarks.
+# POC script 
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -22,8 +13,6 @@ beta_max = 35.0
 
 style.use('seaborn-v0_8-whitegrid')
 plt.rcParams['figure.figsize'] = (18, 12) # Adjusted for 2x2 layout
-plt.rcParams['font.family'] = 'sans-serif'
-plt.rcParams['font.sans-serif'] = 'Inter'
 
 # --- SHARED FUNCTIONS AND NOISE SCHEDULE ---
 dt = T / N
@@ -185,7 +174,6 @@ def denoise_jump(noisy_x):
     return xt
 
 # --- 4. NEW: COMBINED ADDITIVE + MULTIPLICATIVE NOISE ---
-
 def get_noisy_combined(t_idx):
     """Applies multiplicative noise, then additive noise on top."""
     # Stage 1: Create signal with multiplicative noise
