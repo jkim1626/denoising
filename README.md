@@ -14,17 +14,22 @@ pip install -r requirements.txt
 
 # Train (additive VP example)
 
-python scripts/train.py --config configs/additive_vp.yaml
-
-# Sample with PF-ODE (no jumps)
-
 python -m scripts.train --config configs/additive_vp.yaml
 
-# Sample with reverse SDE (supports jumps)
+# Sample with PF-ODE (no jumps)
 
 python -m scripts.sample \
  --ckpt runs/additive/latest.pt \
  --mode pf_ode \
  --steps 40 \
+ --shape 1 2048 \
+ --noise_kind additive
+
+# Sample with reverse SDE (supports jumps)
+
+python -m scripts.sample \
+ --ckpt runs/additive/latest.pt \
+ --mode reverse_sde \
+ --steps 200 \
  --shape 1 2048 \
  --noise_kind additive
