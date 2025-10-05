@@ -1,4 +1,0 @@
-Signal Type: Single Sinusoid
-Noise Type: Wiener
-GP MSE: 0.0000, SNR: 63.14 dB
-Low-Pass MSE: 0.0510, SNR: 9.92 dB

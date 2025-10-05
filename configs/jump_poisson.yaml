@@ -1,0 +1,7 @@
+noise_kind: jump
+lambda: 0.02
+run_dir: runs/jump
+lr: 2.0e-4
+batch: 16
+ema: 0.999
+channels: 1

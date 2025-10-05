@@ -1,0 +1,6 @@
+noise_kind: additive
+run_dir: runs/additive
+lr: 2.0e-4
+batch: 16
+ema: 0.999
+channels: 1
