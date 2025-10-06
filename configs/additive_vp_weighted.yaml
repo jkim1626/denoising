@@ -1,0 +1,8 @@
+noise_kind: additive
+run_dir: runs/additive_weighted
+lr: 2.0e-4
+batch: 16
+ema: 0.999
+channels: 1
+time_weight_mode: logsnr_gamma # none | logsnr_gamma | beta_gamma
+time_weight_gamma: 1.5

@@ -1,0 +1,5 @@
+ckpt: runs/additive/latest.pt
+folder: synthetic_data/additive
+steps: 60
+like_weight: 0.05
+score_scale: 1.0

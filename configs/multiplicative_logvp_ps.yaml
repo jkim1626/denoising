@@ -1,0 +1,8 @@
+# Multiplicative via LOG-space Additive VP — per-sample DSM
+noise_kind: multiplicative
+run_dir: runs/multiplicative_logvp_ps
+
+# optimization
+lr: 2.0e-4
+batch: 16
+ema: 0.999

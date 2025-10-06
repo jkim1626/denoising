@@ -1,0 +1,9 @@
+# Semi-oracle residualization (additive VP)
+
+noise_kind: additive
+run_dir: runs/additive_residual
+
+# optimization
+lr: 2.0e-4
+batch: 16
+ema: 0.999

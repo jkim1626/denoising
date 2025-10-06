@@ -1,0 +1,16 @@
+# Jump / Impulsive noise via density-ratio NCE
+
+noise_kind: jump
+run_dir: runs/jump_nce
+
+# optimization
+lr: 2.0e-4
+batch: 16
+ema: 0.999
+
+# jump corruption used for negatives during training
+p_jump: 0.01 # probability of a spike per position
+amp: 3.0 # spike amplitude scale (std dev of spike noise)
+
+# optional auxiliary epsilon DSM loss weight (0 = off)
+lambda_eps: 0.0

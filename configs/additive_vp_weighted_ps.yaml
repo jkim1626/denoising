@@ -1,0 +1,13 @@
+# True per-sample time-weighted DSM training (additive VP)
+
+noise_kind: additive
+run_dir: runs/additive_weighted_ps
+
+# optimization
+lr: 2.0e-4
+batch: 16
+ema: 0.999
+
+# time-weighting
+time_weight_mode: logsnr_gamma # options: none | logsnr_gamma | beta_gamma
+time_weight_gamma: 1.5

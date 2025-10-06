@@ -1,0 +1,50 @@
+(1) Posterior Score Conditioning
+Add ∇ₓ log p(y | x) to the diffusion score at sampling time to make it sensor-aware (posterior instead of prior).
+Files:
+- scripts/eval_additive_posterior.py
+- sde_denoise/sample/sampler_posterior.py
+- sde_denoise/train/weighting.py
+- sde_denoise/train/train_weighted.py
+- configs/additive_posterior.yaml
+Status/Result so far: Strongly negative ΔSNR on synthetic additive (e.g., −16 dB); shelved.
+
+(2) Semi-Oracle Residualization
+Train the network to learn only the residual between the analytic score and the true score, reducing variance for Gaussian cases.
+Files:
+- sde_denoise/train/engine_residual_additive.py
+- scripts/train_residual_additive.py
+- configs/additive_vp_residual.yaml
+Status/Result so far: Positive but below baseline on synthetic additive (ΔSNR ≈ +2.86 dB).
+
+(3) Closed-Form Conditional DSM Targets
+Replace high-variance score targets with analytic ones. Implemented for additive and multiplicative (log-domain) cases.
+Files (additive – baseline):
+- sde_denoise/train/engine_ps.py
+- scripts/train_ps.py
+- configs/additive_vp.yaml
+Status/Result so far (additive baseline): ΔSNR ≈ +4.55 dB.
+Files (multiplicative – log-domain):
+- sde_denoise/train/engine_logvp_ps.py
+- scripts/train_multiplicative_logvp_ps.py
+- scripts/denoise_npz_multiplicative_logvp.py
+- scripts/eval_multiplicative_logvp.py
+- configs/multiplicative_logvp_ps.yaml
+Status/Result so far (multiplicative): Negative ΔSNR on both variants (≈ −15 to −25 dB).
+
+(4) Log-SNR Time Weighting & Score Scaling
+Weight the DSM loss by log-SNR to balance gradients over time and optionally rescale the score during inference.
+Files:
+- sde_denoise/train/engine_weighted_ps.py
+- scripts/train_weighted_ps.py
+- configs/additive_vp_weighted_ps.yaml
+- scripts/denoise_npz_calibrated.py
+Status/Result so far: Per-sample weighting mixed; inference score calibration wins** — best ΔSNR ≈ +4.84 dB at score_scale=1.20.
+
+(5) Jump / Impulsive Noise (Density-Ratio + NCE)
+Replace the exponential score tilt for impulsive noise with a learned density-ratio log rθ(x,t) ≈ log[p(clean)/p(jump)] to handle discontinuous jumps.
+Files:
+- sde_denoise/train/engine_jump_nce.py
+- scripts/train_jump_nce.py
+- scripts/eval_jump_nce.py
+- configs/jump_nce.yaml
+Status/Result so far: Evaluation diverged (ΔSNR ≈ −190 dB, MSE ≈ 1e12). Needs stability fixes — lower γ_jump (0.1 → 0.2) and possibly logit-gradient clamping.
