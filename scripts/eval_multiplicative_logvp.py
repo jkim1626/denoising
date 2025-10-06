@@ -7,10 +7,15 @@ def snr_db(clean, x):
     den = float(((x-clean)**2).sum()) + 1e-12
     return 10.0 * np.log10(num/den)
 
+def psnr_db(clean, x):
+    peak = float(np.max(np.abs(clean))) + 1e-12
+    mse  = float(np.mean((x - clean)**2)) + 1e-12
+    return 20.0 * np.log10(peak) - 10.0 * np.log10(mse)
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--ckpt", required=True)
-    ap.add_argument("--folder", required=True)  # synthetic_data/multiplicative
+    ap.add_argument("--folder", required=True)
     args = ap.parse_args()
 
     files = sorted(glob.glob(os.path.join(args.folder, "*.npz")))
@@ -27,7 +32,7 @@ def main():
     d_files = sorted(glob.glob(os.path.join(out_dir, "*_mult_logvp_denoised.npz")))
     base_map = {os.path.basename(p).replace("_mult_logvp_denoised",""): p for p in d_files}
 
-    mse_n, mse_d, sin_list, sout_list = [], [], [], []
+    mse_n, mse_d, sin_list, sout_list, pin_list, pout_list = [], [], [], [], [], []
     for f in files:
         base = os.path.basename(f)
         if base not in base_map: continue
@@ -41,6 +46,8 @@ def main():
         mse_d.append(float(np.mean((den-clean)**2)))
         sin_list.append(snr_db(clean, noisy))
         sout_list.append(snr_db(clean, den))
+        pin_list.append(psnr_db(clean, noisy))
+        pout_list.append(psnr_db(clean, den))
 
     print("Files evaluated:", len(mse_d))
     if mse_d:
@@ -49,6 +56,9 @@ def main():
         print(f"SNR_in (dB):   mean={st.mean(sin_list):.2f}")
         print(f"SNR_out (dB):  mean={st.mean(sout_list):.2f}")
         print(f"ΔSNR (dB):     mean={st.mean([o-i for i,o in zip(sin_list,sout_list)]):.2f}")
+        print(f"PSNR_in (dB):  mean={st.mean(pin_list):.2f}")
+        print(f"PSNR_out (dB): mean={st.mean(pout_list):.2f}")
+        print(f"ΔPSNR (dB):    mean={st.mean([o-i for i,o in zip(pin_list,pout_list)]):.2f}")
 
 if __name__ == "__main__":
     main()

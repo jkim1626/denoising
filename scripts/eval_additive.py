@@ -19,7 +19,6 @@ def main():
     if not files:
         raise FileNotFoundError(f"No npz in {args.folder}")
 
-    # model
     model = TinyUNet1D(in_ch=1, out_ch=1, t_dim=128).to(args.device)
     ema = EMA(model)
     load_ckpt(model, ema, opt=None, path=args.ckpt, map_location=args.device)
@@ -39,16 +38,19 @@ def main():
         den = np.sum((noisy-clean)**2) + 1e-12
         return 10.0 * np.log10(num/den)
 
-    m_mse_noisy, m_mse_deno, m_snr_in, m_snr_out = [], [], [], []
+    def psnr_db(clean, x):
+        peak = float(np.max(np.abs(clean))) + 1e-12
+        mse  = float(np.mean((x - clean)**2)) + 1e-12
+        return 20.0 * np.log10(peak) - 10.0 * np.log10(mse)
+
+    m_mse_noisy, m_mse_deno, m_snr_in, m_snr_out, m_psnr_in, m_psnr_out = [], [], [], [], [], []
 
     for p in files:
         d = np.load(p, allow_pickle=True)
         if "clean" not in d or "noisy" not in d:
-            # skip files without both clean and noisy
             continue
         x0 = d["clean"].astype(np.float32)
         xn = d["noisy"].astype(np.float32)
-        # estimate t* from SNR of this file
         snr_in = file_snr_db(x0, xn)
         r2 = 10.0 ** (-snr_in / 10.0)
         grid = torch.linspace(1e-5, 1.0-1e-5, 2000, device=args.device)
@@ -72,6 +74,8 @@ def main():
         m_mse_deno.append(mse_deno)
         m_snr_in.append(snr_in)
         m_snr_out.append(snr_out)
+        m_psnr_in.append(psnr_db(x0, xn))
+        m_psnr_out.append(psnr_db(x0, xhat))
 
     if not m_mse_deno:
         print("No evaluable files found (need both clean & noisy).")
@@ -83,7 +87,10 @@ def main():
     print(f"MSE (denoised):mean={stats.mean(m_mse_deno):.4e}")
     print(f"SNR_in (dB):   mean={stats.mean(m_snr_in):.2f}")
     print(f"SNR_out (dB):  mean={stats.mean(m_snr_out):.2f}")
-    print(f"ΔSNR (dB):     mean={stats.mean([o-i for i,o in zip(m_snr_in,m_snr_out) ]):.2f}")
+    print(f"ΔSNR (dB):     mean={stats.mean([o-i for i,o in zip(m_snr_in,m_snr_out)]):.2f}")
+    print(f"PSNR_in (dB):  mean={stats.mean(m_psnr_in):.2f}")
+    print(f"PSNR_out (dB): mean={stats.mean(m_psnr_out):.2f}")
+    print(f"ΔPSNR (dB):    mean={stats.mean([o-i for i,o in zip(m_psnr_in,m_psnr_out)]):.2f}")
 
 if __name__ == "__main__":
     main()

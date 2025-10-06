@@ -18,10 +18,16 @@ def snr_db(clean, x):
     return 10.0 * np.log10(num / den)
 
 
+def psnr_db(clean, x):
+    peak = float(np.max(np.abs(clean))) + 1e-12
+    mse  = float(np.mean((x - clean)**2)) + 1e-12
+    return 20.0 * np.log10(peak) - 10.0 * np.log10(mse)
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--ckpt", required=True)
-    ap.add_argument("--folder", required=True)   # synthetic_data/jump
+    ap.add_argument("--folder", required=True)
     ap.add_argument("--steps", type=int, default=50)
     ap.add_argument("--gamma_jump", type=float, default=0.5, help="strength of jump correction drift")
     ap.add_argument("--device", default="cuda" if torch.cuda.is_available() else "cpu")
@@ -47,20 +53,15 @@ def main():
         return -eps_pred / (sigma + 1e-12)
 
     def jump_corr_grad(x, t):
-        """
-        ∇_x log rθ(x,t) where rθ ≈ sigmoid(logit) / (1 - sigmoid(logit)).
-        We compute gradient of the logit ratio via autograd.
-        """
         x = x.detach().requires_grad_(True)
         lambda_t = sch.log_snr(t)
         _, logit = model(x, lambda_t)
-        # log-odds = log(sigmoid) - log(1 - sigmoid) = logit (identity)
-        log_odds = logit.sum()  # scalar
+        log_odds = logit.sum()
         g = torch.autograd.grad(log_odds, x, retain_graph=False, create_graph=False)[0]
         x = x.detach()
         return g
 
-    mse_n, mse_d, sin_list, sout_list = [], [], [], []
+    mse_n, mse_d, sin_list, sout_list, pin_list, pout_list = [], [], [], [], [], []
 
     for path in files:
         data = np.load(path, allow_pickle=True)
@@ -72,7 +73,6 @@ def main():
 
         y = torch.from_numpy(noisy[None, None, :]).to(device)
 
-        # PF-ODE + jump correction (Heun)
         x = torch.randn_like(y)
         B = 1
         t = torch.full((B,), 1.0 - 1e-8, device=device)
@@ -101,6 +101,8 @@ def main():
         mse_d.append(float(np.mean((xhat - clean) ** 2)))
         sin_list.append(snr_db(clean, noisy))
         sout_list.append(snr_db(clean, xhat))
+        pin_list.append(psnr_db(clean, noisy))
+        pout_list.append(psnr_db(clean, xhat))
 
     print("Files evaluated:", len(mse_d))
     if mse_d:
@@ -109,6 +111,9 @@ def main():
         print(f"SNR_in (dB):   mean={st.mean(sin_list):.2f}")
         print(f"SNR_out (dB):  mean={st.mean(sout_list):.2f}")
         print(f"ΔSNR (dB):     mean={st.mean([o - i for i, o in zip(sin_list, sout_list)]):.2f}")
+        print(f"PSNR_in (dB):  mean={st.mean(pin_list):.2f}")
+        print(f"PSNR_out (dB): mean={st.mean(pout_list):.2f}")
+        print(f"ΔPSNR (dB):    mean={st.mean([o - i for i, o in zip(pin_list, pout_list)]):.2f}")
 
 
 if __name__ == "__main__":

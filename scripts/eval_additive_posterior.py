@@ -20,6 +20,11 @@ def safe_snr_db(clean, x):
     den = float(((x-clean)**2).sum()) + 1e-12
     return 10.0 * np.log10(num / den)
 
+def psnr_db(clean, x):
+    peak = float(np.max(np.abs(clean))) + 1e-12
+    mse  = float(np.mean((x - clean)**2)) + 1e-12
+    return 20.0 * np.log10(peak) - 10.0 * np.log10(mse)
+
 def rms_torch(x):
     return torch.sqrt(torch.mean(x**2) + 1e-12)
 
@@ -59,7 +64,7 @@ def main():
     out_dir = os.path.join(folder, "posterior_denoised")
     os.makedirs(out_dir, exist_ok=True)
 
-    mse_noisy, mse_deno, snr_in_list, snr_out_list = [], [], [], []
+    mse_noisy, mse_deno, snr_in_list, snr_out_list, psnr_in_list, psnr_out_list = [], [], [], [], [], []
     n_proc = 0
 
     for p in files:
@@ -70,7 +75,6 @@ def main():
         clean = d["clean"].astype(np.float32)
         noisy = d["noisy"].astype(np.float32)
 
-        # infer SNR(dB)
         snr_db_meta = None
         if "meta_json" in d:
             try:
@@ -85,21 +89,19 @@ def main():
         if snr_db_meta is None:
             snr_db_meta = 10.0
 
-        # likelihood variance tau^2 with robust floor
         y = noisy
         y_var = robust_var(y)
         snr_lin = 10.0 ** (snr_db_meta / 10.0)
         tau2_est = y_var / snr_lin
-        tau2_floor = max(1e-6 * y_var, 1e-8)  # prevents huge gradients
+        tau2_floor = max(1e-6 * y_var, 1e-8)
         tau2 = max(tau2_est, tau2_floor)
 
         y_t = torch.from_numpy(y[None, None, :]).to(device)
-        x = torch.randn_like(y_t)  # init at t≈1
+        x = torch.randn_like(y_t)
         B = 1
         t = torch.full((B,), 1.0 - 1e-8, device=device)
         dt = 1.0 / steps
 
-        # gradient clipping cap (RMS) for likelihood term
         g_rms_cap = 3.0
 
         for _ in range(steps):
@@ -127,7 +129,6 @@ def main():
             x = x + 0.5 * dt * (k1 + v2)
             t = t_mid
 
-            # keep numerics finite
             x = torch.nan_to_num(x, nan=0.0, posinf=1e6, neginf=-1e6).clamp_(-1e6, 1e6)
 
         xhat = x.squeeze().cpu().numpy().astype(np.float32)
@@ -143,6 +144,8 @@ def main():
         mse_deno.append(float(np.mean((xhat - clean)**2)))
         snr_in_list.append(safe_snr_db(clean, noisy))
         snr_out_list.append(safe_snr_db(clean, xhat))
+        psnr_in_list.append(psnr_db(clean, noisy))
+        psnr_out_list.append(psnr_db(clean, xhat))
         n_proc += 1
 
     print("Files evaluated:", n_proc)
@@ -154,6 +157,9 @@ def main():
     print(f"SNR_in (dB):   mean={st.mean(snr_in_list):.2f}")
     print(f"SNR_out (dB):  mean={st.mean(snr_out_list):.2f}")
     print(f"ΔSNR (dB):     mean={st.mean([o-i for i,o in zip(snr_in_list,snr_out_list)]):.2f}")
+    print(f"PSNR_in (dB):  mean={st.mean(psnr_in_list):.2f}")
+    print(f"PSNR_out (dB): mean={st.mean(psnr_out_list):.2f}")
+    print(f"ΔPSNR (dB):    mean={st.mean([o-i for i,o in zip(psnr_in_list,psnr_out_list)]):.2f}")
     print(f"Outputs saved to: {out_dir}")
 
 if __name__ == "__main__":
