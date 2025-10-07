@@ -7,7 +7,7 @@ import numpy as np
 
 # ========== CONFIG (edit these) ==========
 # "additive" | "multiplicative" | "jump" | "combined"
-NOISE_TYPE       = "combined"                   
+NOISE_TYPE       = "additive"                   
 SNR_LIST_DB      = [0, 5, 10, 15, 20, 25]
 FILES_PER_SNR    = 50
 FS_HZ            = 1000.0                   # sampling rate

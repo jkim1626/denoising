@@ -207,8 +207,11 @@ marimo/_lsp/
 __marimo__/
 
 # Extra
+results/
 requirements.txt
 papers/
 results.txt
 guide.txt
 baselines.txt
+commands.txt
+cross_val.txt
